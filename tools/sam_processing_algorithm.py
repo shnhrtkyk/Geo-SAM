@@ -49,7 +49,7 @@ import hashlib
 from pyproj import CRS
 from pyproj.aoi import AreaOfInterest
 from pyproj.database import query_utm_crs_info
-from ..ui.icons import QIcon_EncoderTool
+from ..ui.icons import QIcon_GeoSAMEncoder
 from ..docs import encoder_help
 
 # 0 for meters, 6 for degrees, 9 for unknown
@@ -100,7 +100,7 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterRasterLayer(
                 name=self.INPUT,
                 description=self.tr(
-                    'Input raster layer or image file path')
+                    '航空写真や衛星画像、地形データなどの画像パス')
             )
         )
 
@@ -108,7 +108,7 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterBand(
                 name=self.BANDS,
                 description=self.tr(
-                    'Select no more than 3 bands (preferably in RGB order, default to first 3 available bands)'),
+                    '最大で3つのバンドを選択してください(できればRGBの順序で、利用可能な最初の3つのバンドがデフォルトです)'),
                 # defaultValue=[1, 2, 3],
                 parentLayerParameterName=self.INPUT,
                 optional=True,
@@ -118,14 +118,14 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
 
         crs_param = QgsProcessingParameterCrs(
             name=self.CRS,
-            description=self.tr('Target CRS (default to original CRS)'),
+            description=self.tr('投影法(CRS) (元のCRSがデフォルト)'),
             optional=True,
         )
 
         res_param = QgsProcessingParameterNumber(
             name=self.RESOLUTION,
             description=self.tr(
-                'Target resolution in meters (default to native resolution)'),
+                '画像の解像度(メートル単位) (ネイティブ解像度がデフォルト)'),
             type=QgsProcessingParameterNumber.Double,
             optional=True,
             minValue=0,
@@ -136,7 +136,7 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
         range_param = QgsProcessingParameterRange(
             name=self.RANGE,
             description=self.tr(
-                'Data value range to be rescaled to [0, 255] (default to [min, max] of the values)'),  # inside processing extent
+                '[0, 255]に正規化されるデータ値の範囲 (デフォルトは値の[最小値, 最大値])'),  # inside processing extent
             type=QgsProcessingParameterNumber.Double,
             defaultValue=None,
             optional=True
@@ -146,7 +146,7 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
             name=self.CUDA_ID,
             # large images will be sampled into patches in a grid-like fashion
             description=self.tr(
-                'CUDA Device ID (choose which GPU to use, default to device 0)'),
+                'CUDA デバイスID (どのGPUを使用するか選択、デフォルトはデバイス0)'),
             type=QgsProcessingParameterNumber.Integer,
             defaultValue=0,
             minValue=0,
@@ -157,7 +157,7 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterExtent(
                 name=self.EXTENT,
                 description=self.tr(
-                    'Processing extent (default to the entire image)'),
+                    '処理範囲 (デフォルトは画像全体)'),
                 optional=True
             )
         )
@@ -167,7 +167,7 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
                 name=self.STRIDE,
                 # large images will be sampled into patches in a grid-like fashion
                 description=self.tr(
-                    'Stride (large image will be sampled into overlapped patches)'),
+                    'ストライド幅 (大きな画像はオーバーラップするパッチに分割される)'),
                 type=QgsProcessingParameterNumber.Integer,
                 defaultValue=512,
                 minValue=1,
@@ -179,7 +179,7 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterFile(
                 name=self.CKPT,
                 description=self.tr(
-                    'SAM checkpoint path (download in advance)'),
+                    'SAMチェックポイントのパス (事前にダウンロードが必要)'),
                 extension='pth',
             )
         )
@@ -189,9 +189,9 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterEnum(
                 name=self.MODEL_TYPE,
                 description=self.tr(
-                    'SAM model type (b for base, l for large, h for huge)'),
+                    'SAMモデルタイプ (b はbase、l はlarge、h はhuge)'),
                 options=self.model_type_options,
-                defaultValue=1,  # 'vit_l'
+                defaultValue=0,  # 'vit_h'
             )
         )
 
@@ -199,14 +199,14 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterFolderDestination(
                 self.OUTPUT,
                 self.tr(
-                    "Output directory (choose the location that the image features will be saved)"),
+                    "出力ディレクトリ (画像特徴が保存される場所を選択)"),
             )
         )
 
         self.addParameter(
             QgsProcessingParameterBoolean(
                 self.CUDA,
-                self.tr("Use GPU if CUDA is available."),
+                self.tr("GPU を利用可能な場合は GPU を使用します。"),
                 defaultValue=True
             )
         )
@@ -216,7 +216,7 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
                 name=self.BATCH_SIZE,
                 # large images will be sampled into patches in a grid-like fashion
                 description=self.tr(
-                    'Batch size (take effect if choose to use GPU and CUDA is available)'),
+                    'バッチサイズ (GPUの使用を選択しCUDAが利用可能な場合に有効)'),
                 type=QgsProcessingParameterNumber.Integer,
                 defaultValue=1,
                 minValue=1,
@@ -227,7 +227,7 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterBoolean(
                 self.LOAD,
-                self.tr("Load output features in Geo-SAM tool after processing"),
+                self.tr("処理が完了したら、Geo-SAMツールで出力された特徴量を読み込みます"),
                 defaultValue=True
             )
         )
@@ -820,4 +820,4 @@ class SamProcessingAlgorithm(QgsProcessingAlgorithm):
         # return self.tr("Generate image features using SAM image encoder.")
 
     def icon(self):
-        return QIcon_EncoderTool
+        return QIcon_GeoSAMEncoder

@@ -1,13 +1,23 @@
-This tool helps to preprocess geospatial images and generate image features using the SAM image encoder. The generated image features can then be used in our Geo-SAM tool to label the landforms by adding points and bounding box prompts.
+この機能は、地理空間画像(航空写真や衛星画像、地形データなど)を前処理し、SAM画像エンコーダを使用して画像特徴を作成します。作成された画像の特徴量は、その後、Geo-SAMツールで画像にポリゴンを付けるためにポイントや矩形のプロンプトを追加する際に使用します。
 
-After selecting the raster layer or image file you want to process, you should also choose the proper bands. The SAM natively supports only three-band RGB images, but we have adapted the tool to support one or two-band images so that you can try grayscale images or NDVI spectral index images. 
+処理したいラスターレイヤーまたは画像ファイルを選択した後、適切なバンドを選択する必要があります。SAMは3バンドのRGB画像のみをサポートしているが、このツールではグレースケール画像やNDVI分光指数画像でも使えるよう、1または2バンド画像もサポートするように調整しています。
 
-Since SAM only supports input images with size of (1024, 1204), small images will be resized to match the input size, while large images will be sampled into overlapped patches (patch_size=1024) in a grid-like fashion. The stride parameter will determine the overlap behavior, overlap = patch_size - stride.
+SAMの入力画像サイズは(1024, 1024)に固定されているため、1024よりも小さな画像はこのサイズに合わせて拡大され、大きな画像はオーバーラップするパッチ(パッチサイズ=1024)にグリッド状に分割されます。ストライドパラメータはオーバーラップの動作を決定し、オーバーラップ = パッチサイズ - ストライドとなります。
 
-The values of the image input to the SAM should range from 0 to 255, and you may need to specify the value range to be rescaled to [0, 255]. By default, the tool will help you to find the min and max values of the image data and rescale the value range of [min, max] to [0, 255].
+SAMに入力される画像の値は0から255の範囲である必要があるので、正規化を行います。デフォルトでは、このツールが画像データの最小値と最大値を見つけ、[min, max]の値の範囲を[0, 255]にスケーリングします。
 
-SAM model checkpoints should be downloaded in advance, and three versions (huge, large, base) are available. The large version "vit_l" is recommended to try first. You need to specify the model type that matches the checkpoint version.
+SAMモデルのチェックポイントは事前にダウンロードする必要があり、huge、large、baseの3つのバージョンが利用可能です。largeバージョンの"vit_l"を最初に試すことをおすすめします。チェックポイントバージョンに合ったモデルタイプを指定する必要があります。
 
-Tips for making encoding process faster:
+エンコーディングプロセスを高速化するためのヒント:
 
-1. Choose smaller processing extent; 2. Reduce target resolution; 3. Increase stride to minimize overlap; 4. Choose a smaller version of sam model; 5. Use GPU; 6. Increase batch_size when using a GPU with sufficient gpu memory;
+1. 処理範囲を小さくする
+
+2. 目標解像度を下げる
+
+3. オーバーラップを最小限にするためstrideを大きくする
+
+4. 小さいバージョンのSAMモデルを選ぶ
+
+5. GPUを使う
+
+6. GPU使用時は、GPU メモリが十分あれば、バッチサイズを大きくする

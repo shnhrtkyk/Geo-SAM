@@ -1,13 +1,8 @@
 import os
 import typing
 import numpy as np
-from qgis.core import (QgsProject,
-                       QgsCoordinateReferenceSystem,
-                       QgsCoordinateTransform,
-                       QgsPointXY,
-                       QgsRectangle,
-                       QgsVectorLayer)
-from .messageTool import MessageTool
+from qgis.core import (QgsProject, QgsCoordinateReferenceSystem, Qgis, QgsMessageLog,
+                       QgsCoordinateTransform, QgsPointXY,  QgsRectangle, QgsVectorLayer)
 
 
 class ImageCRSManager:
@@ -16,10 +11,11 @@ class ImageCRSManager:
     def __init__(self, img_crs) -> None:
         self.img_crs = QgsCoordinateReferenceSystem(
             img_crs)  # from str to QgsCRS
+        # print(self.img_crs.authid())
 
     def img_point_to_crs(
         self, point: QgsPointXY, dst_crs: QgsCoordinateReferenceSystem
-    ) -> QgsRectangle:
+    ):
         """transform point from this image crs to destination crs
 
         Parameters:
@@ -38,7 +34,7 @@ class ImageCRSManager:
 
     def point_to_img_crs(
         self, point: QgsPointXY, dst_crs: QgsCoordinateReferenceSystem
-    ) -> QgsRectangle:
+    ):
         """transform point from point crs to this image crs
 
         Parameters:
@@ -58,7 +54,7 @@ class ImageCRSManager:
 
     def extent_to_img_crs(
         self, extent: QgsRectangle, dst_crs: QgsCoordinateReferenceSystem
-    ) -> QgsRectangle:
+    ):
         """transform extent from point crs to this image crs
 
         Parameters:
@@ -75,9 +71,7 @@ class ImageCRSManager:
         extent_transformed = transform.transformBoundingBox(extent)
         return extent_transformed
 
-    def img_extent_to_crs(
-        self, extent: QgsRectangle, dst_crs: QgsCoordinateReferenceSystem
-    ) -> QgsRectangle:
+    def img_extent_to_crs(self, extent: QgsRectangle, dst_crs: QgsCoordinateReferenceSystem):
         '''transform extent from this image crs to destination crs
 
         Parameters:
@@ -122,12 +116,8 @@ class LayerExtent:
                     layer_ext = img_crs_manager.extent_to_img_crs(
                         layer_ext, layer.crs())
                 except Exception as e:
-                    MessageTool.MessageLog(
-                        f">>> Error in extent: {layer_ext} \n type:{type(layer_ext)} \n: {e}",
-                        level='critical',
-                        notify_user=False
-                    )
-
+                    QgsMessageLog.logMessage(
+                        f">>> Error in extent: {layer_ext} \n type:{type(layer_ext)} \n: {e}", level=Qgis.Critical)
                     return None
 
             return cls.from_qgis_extent(layer_ext)
